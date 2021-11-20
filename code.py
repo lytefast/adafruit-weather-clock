@@ -68,7 +68,7 @@ print('== Jumper set to {UNITS}')
 #     f'&appid={secrets["openweather_token"]}'
 # )
 DATA_SOURCE = (
-    f'http://api.openweathermap.org/data/2.5/weather'
+    f'https://api.openweathermap.org/data/2.5/weather'
     f'?lat={secrets["latitude"]}'
     f'&lon={secrets["longitude"]}'
     f'&units={UNITS}'

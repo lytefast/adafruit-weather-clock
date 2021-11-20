@@ -12,8 +12,8 @@ MAIN_COLOR = 0x9000FF  # weather condition
 DESCRIPTION_COLOR = 0x00D3FF
 CITY_COLOR = 0x9000FF
 HUMIDITY_COLOR = 0x0000AA
-WIND_COLOR = 0x00FFFF
-TIME_COLORS = [0x00A2FF, 0xFFFFFF, 0x2DD633]
+WIND_COLOR = 0x0055FF
+TIME_COLORS = [0x00A2FF, 0xFFFFFF, 0x555555]
 
 cwd = ('/' + __file__).rsplit('/', 1)[
     0
@@ -143,11 +143,11 @@ class Display_Graphics(displayio.Group):
 
         city_name = weather['name'] + ', ' + weather['sys']['country']
 
-        temperature = round(weather['main']['temp'])
+        temperature = weather['main']['temp']
         if self.celsius:
-            self.temp_label.text = f'{temperature: >2}°C'
+            self.temp_label.text = f'{temperature: >2.0f}°C'
         else:
-            self.temp_label.text = f'{temperature: >2}°F'
+            self.temp_label.text = f'{temperature: >2.0f}°F'
 
         description = weather['weather'][0]['description']
         description = description[0].upper() + description[1:]
@@ -158,7 +158,8 @@ class Display_Graphics(displayio.Group):
 
         wind = round(weather['wind']['speed'])
         if self.meters_speed:
-            self.wind_label.text = f'{wind} m/s'
+            wind *= 3.6
+            self.wind_label.text = f'{wind: <3.1f} km/h'
         else:
             self.wind_label.text = f'{wind} mph'
 
