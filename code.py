@@ -18,8 +18,8 @@ from adafruit_matrixportal.network import Network
 from adafruit_matrixportal.matrix import Matrix
 import display_graphics
 
-TIME_SYNC_INTERVAL = 60 * 60 * 6  # 6 hours
-WEATHER_SYNC_INTERVAL = 60 * 10  # 10 mins
+TIME_SYNC_INTERVAL = 60 * 60 * 1  # 1 hours
+WEATHER_SYNC_INTERVAL = 60 * 15  # 15 mins
 
 # Get wifi details and more from a secrets.py file
 try:
@@ -62,7 +62,7 @@ print('== Jumper set to {UNITS}')
 # print("== Getting weather for {}".format(LOCATION))
 # Set up from where we'll be fetching data
 # DATA_SOURCE = (
-#     f'http://api.openweathermap.org/data/2.5/weather?q='
+#     f'https://api.openweathermap.org/data/2.5/weather?q='
 #     f'{LOCATION}'
 #     f'&units={UNITS}'
 #     f'&appid={secrets["openweather_token"]}'
@@ -108,7 +108,7 @@ while True:
             time_struct = update_time()
             print(f'== GET/time @ {time_struct}')
             localtime_refresh_ts = time.monotonic()
-        except RuntimeError as e:
+        except (BaseException, RuntimeError) as e:
             print('!! Some error occured. Retrying', e)
             continue
 
@@ -120,11 +120,13 @@ while True:
             gfx.display_weather(value)
             weather_refresh_ts = time.monotonic()
             print(f'== GET/weather @ {time.localtime()}')
-        except RuntimeError as e:
+        except (BaseException, RuntimeError) as e:
             print('!! Some error occured. Retrying', e)
             continue
         
-    gfx.display_clock(time_tuple=time.localtime())
+    is_new_state = gfx.display_clock(time_tuple=time.localtime())
+    if is_new_state:
+        gfx.render()
     # gfx.scroll_next_label()
     # Pause between labels
     time.sleep(SCROLL_HOLD_TIME)
