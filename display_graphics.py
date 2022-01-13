@@ -45,6 +45,7 @@ class Display_Graphics(displayio.Group):
     def __init__(
             self,
             display,
+            logger,
             *,
             am_pm=False,
             units='metric'
@@ -53,6 +54,7 @@ class Display_Graphics(displayio.Group):
         self._show_splash(display)
 
         self.display = display
+        self.logger = logger
 
         # Init units
         self.am_pm = am_pm
@@ -67,8 +69,8 @@ class Display_Graphics(displayio.Group):
         self.root_group = displayio.Group()
         self.root_group.append(self)
 
-        self._init_fonts()
-        self._init_weather_stats()
+        small_font = self._init_fonts()
+        self._init_weather_stats(small_font)
         self._init_clock_group()
         # used to short circuit time renders
         self._clock_state = (-1,-1)
@@ -88,23 +90,24 @@ class Display_Graphics(displayio.Group):
         self.set_icon(None)
         self._scrolling_texts = []
 
-        self.description_text = Label(self.small_font)
-        self.description_text.color = DESCRIPTION_COLOR
-
     def _init_fonts(self):
         glyphs = b'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-,.: '
-        self.small_font = bitmap_font.load_font(PATH_FONT_REG_8)
-        self.small_font.load_glyphs(glyphs)
-        self.small_font.load_glyphs(('°',))  # a non-ascii character
+        small_font = bitmap_font.load_font(PATH_FONT_REG_8)
+        small_font.load_glyphs(glyphs)
+        small_font.load_glyphs(('°',))  # a non-ascii character
 
-    def _init_weather_stats(self):
+        return small_font
 
-        self.temp_label = Label(self.small_font)
+    def _init_weather_stats(self, small_font):
+
+        self.temp_label = Label(small_font)
         self.temp_label.color = TEMP_COLOR
-        self.wind_label = Label(self.small_font)
+        self.wind_label = Label(small_font)
         self.wind_label.color = WIND_COLOR
-        self.humidity_label = Label(self.small_font)
+        self.humidity_label = Label(small_font)
         self.humidity_label.color = HUMIDITY_COLOR
+        # self.description_text = Label(small_font)
+        # self.description_text.color = DESCRIPTION_COLOR
         self._icon_group = displayio.Group()
 
         weather_group = displayio.Group()
@@ -163,9 +166,9 @@ class Display_Graphics(displayio.Group):
         else:
             self.temp_label.text = f'{temperature: >2.0f}°F'
 
-        description = weather['weather'][0]['description']
-        description = description[0].upper() + description[1:]
-        self.description_text.text = description # 'thunderstorm with heavy drizzle'
+        # description = weather['weather'][0]['description']
+        # description = description[0].upper() + description[1:]
+        # self.description_text.text = description # 'thunderstorm with heavy drizzle'
 
         humidity = weather['main']['humidity']
         self.humidity_label.text = f'{humidity}% humidity'
@@ -177,7 +180,13 @@ class Display_Graphics(displayio.Group):
         else:
             self.wind_label.text = f'{wind} mph'
 
-        print(f'== Weather Overview: {self.temp_label.text}: {self.description_text.text} {self.humidity_label.text} {self.wind_label.text}')
+        weather_data = [
+            self.temp_label.text,
+            # self.description_text.text,
+            self.humidity_label.text,
+            self.wind_label.text,
+        ]
+        self.logger.debug('== Weather Overview: %s', weather_data)
         self.display.show(self.root_group)
 
     def set_icon(self, icon_name):
@@ -191,7 +200,7 @@ class Display_Graphics(displayio.Group):
 
         icon_map = ('01', '02', '03', '04', '09', '10', '11', '13', '50')
 
-        print(f'== Set icon to {icon_name}')
+        self.logger.debug(f'== Set icon to {icon_name}')
         if self._icon_group:
             self._icon_group.pop()
         if icon_name is not None:
@@ -230,7 +239,7 @@ class Display_Graphics(displayio.Group):
         self.hours_label.color = time_color
         self.minutes_label.color = time_color
 
-        # print(f'== Display time: {self.hours_label.text}:{self.minutes_label.text}. {time_tuple}')
+        self.logger.debug(f'== Display time: {self.hours_label.text}:{self.minutes_label.text}. {time_tuple}')
         self.display.show(self.root_group)
         return (hours, minutes)
 
