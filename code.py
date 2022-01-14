@@ -23,8 +23,13 @@ from adafruit_matrixportal.matrix import Matrix
 from aio_handler import AIOHandler
 
 
-TIME_SYNC_INTERVAL = 60 * 60 * 1  # 1 hours
-WEATHER_SYNC_INTERVAL = 60 * 15  # 15 mins
+ONE_MIN = 60
+ONE_HOUR = 60 * ONE_MIN
+
+TIME_SYNC_INTERVAL = ONE_HOUR
+WEATHER_SYNC_INTERVAL = 15 * ONE_MIN
+
+SCROLL_HOLD_TIME = 0.2  # set this to hold each line before finishing scroll
 
 # Get wifi details and more from a secrets.py file
 try:
@@ -69,8 +74,8 @@ else:
     UNITS = 'imperial'
 logger.info(f'== Jumper set to {UNITS}')
 
-# # Use cityname, country code where countrycode is ISO3166 format.
-# # E.g. "New York, US" or "London, GB"
+# Use cityname, country code where countrycode is ISO3166 format.
+# E.g. "New York, US" or "London, GB"
 # LOCATION = "Oakland, CA, US"
 # DATA_SOURCE = (
 #     f'https://api.openweathermap.org/data/2.5/weather?q='
@@ -85,8 +90,6 @@ DATA_SOURCE = (
     f'&units={UNITS}'
     f'&appid={secrets["openweather_token"]}'
 )
-DATA_LOCATION = []
-SCROLL_HOLD_TIME = 0.2  # set this to hold each line before finishing scroll
 
 # --- Display setup ---
 matrix = Matrix()
@@ -128,8 +131,8 @@ def maybe_render(context):
 
     # only query the weather every 10 minutes (and on first run)
     if (time.monotonic() - context.weather_refresh_ts) > WEATHER_SYNC_INTERVAL:
-        logger.debug(f'== GET/weather REQ: {DATA_SOURCE} {DATA_LOCATION}')
-        value = network.fetch_data(DATA_SOURCE, json_path=(DATA_LOCATION,))
+        logger.debug(f'== GET/weather REQ: {DATA_SOURCE}')
+        value = network.fetch_data(DATA_SOURCE, json_path=([],))
         gfx.display_weather(value)
         context.weather_refresh_ts = time.monotonic()
         logger.debug(f'== GET/weather @ {time.localtime()}')
