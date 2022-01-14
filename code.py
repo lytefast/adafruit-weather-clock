@@ -106,6 +106,20 @@ class Context:
     weather_refresh_ts = -WEATHER_SYNC_INTERVAL - 1
     gfx = None
 
+    def should_refresh_time(self):
+        time_diff = time.monotonic() - self.localtime_refresh_ts
+        return time_diff > TIME_SYNC_INTERVAL
+
+    def time_refreshed(self):
+        self.localtime_refresh_ts = time.monotonic()
+
+    def should_refresh_weather(self):
+        time_diff = time.monotonic() - self.weather_refresh_ts
+        return time_diff > WEATHER_SYNC_INTERVAL
+
+    def weather_refreshed(self):
+        self.weather_refresh_ts = time.monotonic()
+
 context = Context()
 context.gfx = display_graphics.Display_Graphics(
     matrix.display, logger,
@@ -126,17 +140,18 @@ def update_time():
 
 def maybe_render(context):
     # only query the online time once per hour (and on first run)
-    if (time.monotonic() - context.localtime_refresh_ts) > TIME_SYNC_INTERVAL:
+    if context.should_refresh_time():
         time_struct = update_time()
         logger.debug(f'== GET/time @ {time_struct}')
-        context.localtime_refresh_ts = time.monotonic()
+        context.time_refreshed()
 
     # only query the weather every 10 minutes (and on first run)
-    if (time.monotonic() - context.weather_refresh_ts) > WEATHER_SYNC_INTERVAL:
-        logger.debug(f'== GET/weather REQ: {DATA_SOURCE} {DATA_LOCATION}')
-        value = network.fetch_data(DATA_SOURCE, json_path=(DATA_LOCATION,))
+    if context.should_refresh_weather():
+        logger.debug(f'== GET/weather REQ: {DATA_SOURCE}')
+        value = network.fetch_data(DATA_SOURCE)
         gfx.display_weather(value)
-        context.weather_refresh_ts = time.monotonic()
+
+        context.weather_refreshed()
         logger.debug(f'== GET/weather @ {time.localtime()}')
 
     is_new_state = gfx.display_clock(time_tuple=time.localtime())
