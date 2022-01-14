@@ -23,8 +23,13 @@ from adafruit_matrixportal.matrix import Matrix
 from aio_handler import AIOHandler
 
 
-TIME_SYNC_INTERVAL = 60 * 60 * 1  # 1 hours
-WEATHER_SYNC_INTERVAL = 60 * 15  # 15 mins
+ONE_MIN = 60
+ONE_HOUR = 60 * ONE_MIN
+
+TIME_SYNC_INTERVAL = ONE_HOUR
+WEATHER_SYNC_INTERVAL = 15 * ONE_MIN
+
+SCROLL_HOLD_TIME = 0.2  # set this to hold each line before finishing scroll
 
 # Get wifi details and more from a secrets.py file
 try:
