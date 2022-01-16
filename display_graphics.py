@@ -29,26 +29,34 @@ HUMIDITY_COLOR = COLOR_BLUE_ROYAL
 WIND_COLOR = COLOR_LIME_LIGHT
 TIME_COLORS = [COLOR_LIME, COLOR_WHITE, COLOR_GREY]
 
-cwd = ('/' + __file__).rsplit('/', 1)[
-    0
-]  # the current working directory (where this file is)
-
-PATH_FONT_REG_8 = f'{cwd}/fonts/Roboto-8-Regular.bdf'
-PATH_FONT_MONO_16 = f'{cwd}/fonts/RobotoMono-16-Semibold.bdf'
-
-PATH_WEATHER_ICONS = f'{cwd}/weather-icons.bmp'
 ICON_WIDTH = 16
 ICON_HEIGHT = 16
 
 
-class Display_Graphics(displayio.Group):
+def _init_fonts(asset_path):
+    PATH_FONT_REG_8 = f'{asset_path}/fonts/Roboto-8-Regular.bdf'
+    PATH_FONT_MONO_16 = f'{asset_path}/fonts/RobotoMono-16-Semibold.bdf'
+
+    glyphs = b'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-,.: '
+    small_font = bitmap_font.load_font(PATH_FONT_REG_8)
+    small_font.load_glyphs(glyphs)
+    small_font.load_glyphs(('°',))  # a non-ascii character
+
+    clock_font = bitmap_font.load_font(PATH_FONT_MONO_16)
+    clock_font.load_glyphs(b'0123456789')
+
+    return (small_font, clock_font)
+
+
+class DisplayGraphics(displayio.Group):
     def __init__(
             self,
             display,
             logger,
             *,
             am_pm=False,
-            units='metric'
+            celsius=True,
+            meters_speed=True,
     ):
         super().__init__()
         self._show_splash(display)
@@ -58,20 +66,21 @@ class Display_Graphics(displayio.Group):
 
         # Init units
         self.am_pm = am_pm
-        if units == 'imperial':
-            self.celsius = False
-            self.meters_speed = False
-        else:
-            self.celsius = True
-            self.meters_speed = True
+        self.celsius = celsius
+        self.meters_speed = meters_speed
 
         # Setup display
         self.root_group = displayio.Group()
         self.root_group.append(self)
 
-        small_font = self._init_fonts()
+        # Asset locations
+        cwd = ('/' + __file__).rsplit('/', 1)[
+            0
+        ]  # the current working directory (where this file is)
+
+        (small_font, clock_font) = _init_fonts(cwd)
         self._init_weather_stats(small_font)
-        self._init_clock_group()
+        self._init_clock_group(clock_font)
         # used to short circuit time renders
         self._clock_state = (-1,-1)
 
@@ -79,6 +88,7 @@ class Display_Graphics(displayio.Group):
         self.append(self._text_group)
 
         # Load the icon sprite sheet
+        PATH_WEATHER_ICONS = f'{cwd}/weather-icons.bmp'
         icons = displayio.OnDiskBitmap(PATH_WEATHER_ICONS)
         self._icon_sprite = displayio.TileGrid(
             icons,
@@ -89,14 +99,6 @@ class Display_Graphics(displayio.Group):
 
         self.set_icon(None)
         self._scrolling_texts = []
-
-    def _init_fonts(self):
-        glyphs = b'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-,.: '
-        small_font = bitmap_font.load_font(PATH_FONT_REG_8)
-        small_font.load_glyphs(glyphs)
-        small_font.load_glyphs(('°',))  # a non-ascii character
-
-        return small_font
 
     def _init_weather_stats(self, small_font):
 
@@ -124,10 +126,7 @@ class Display_Graphics(displayio.Group):
 
         self.append(weather_group)
 
-    def _init_clock_group(self):
-        clock_font = bitmap_font.load_font(PATH_FONT_MONO_16)
-        clock_font.load_glyphs(b'0123456789')
-
+    def _init_clock_group(self, clock_font):
         self.hours_label = Label(clock_font)
         self.hours_label.color = TIME_COLORS[0]
         self.minutes_label = Label(clock_font)
@@ -239,7 +238,7 @@ class Display_Graphics(displayio.Group):
         self.hours_label.color = time_color
         self.minutes_label.color = time_color
 
-        self.logger.debug(f'== Display time: {self.hours_label.text}:{self.minutes_label.text}. {time_tuple}')
+        self.logger.debug(f'== Display time: {self.hours_label.text}:{self.minutes_label.text}.')
         self.display.show(self.root_group)
         return (hours, minutes)
 

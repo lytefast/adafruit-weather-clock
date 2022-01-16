@@ -12,6 +12,7 @@ Licensed under the MIT license.
 All text above must be included in any redistribution.
 """
 
+import adafruit_logging as logging
 from adafruit_portalbase import PortalBase
 from adafruit_portalbase.network import NetworkBase
 
@@ -31,19 +32,24 @@ from adafruit_logging import LoggingHandler
 
 class AIOHandler(LoggingHandler):
 
-    def __init__(self, name, portal_device):
+    def __init__(self, name, portal_device, log_level=logging.INFO):
         """Create an instance."""
         self._log_feed_name=f'{name}-logging'
         if not issubclass(type(portal_device), (PortalBase, NetworkBase)):
             raise TypeError("portal_device must be a NetworkBase or subclass of PortalBase")
         self._portal_device = portal_device
+        self.send_log_level = log_level
 
 
-    def emit(self, level, msg):
+    def emit(self, log_level: int, message: str):
         """Generate the message and write it to the AIO Feed.
 
         :param level: The level at which to log
         :param msg: The core message
 
         """
-        self._portal_device.push_to_io(self._log_feed_name, self.format(level, msg))
+        if log_level < self.send_log_level:
+            return
+        self._portal_device.push_to_io(
+            self._log_feed_name, self.format(log_level, message)
+        )

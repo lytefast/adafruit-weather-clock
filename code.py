@@ -39,10 +39,9 @@ except ImportError:
     raise
 
 network = Network(status_neopixel=board.NEOPIXEL, debug=True)
-
 logger = logging.getLogger('aio')
-logger.addHandler(AIOHandler('adafruit-weather-clock', network))
-logger.setLevel(logging.WARNING)
+logger.addHandler(AIOHandler('adafruit-weather-clock', network, logging.WARNING))
+logger.setLevel(logging.INFO)
 logger.critical('== Initializing adafruit-weather-clock ====')
 
 if hasattr(board, 'D12'):
@@ -72,7 +71,7 @@ if is_metric:
     UNITS = 'metric'  # can pick 'imperial' or 'metric' as part of URL query
 else:
     UNITS = 'imperial'
-logger.info(f'== Jumper set to {UNITS}')
+logger.debug(f'== Jumper set to {UNITS}')
 
 # Use cityname, country code where countrycode is ISO3166 format.
 # E.g. "New York, US" or "London, GB"
@@ -91,23 +90,17 @@ DATA_SOURCE = (
     f'&appid={secrets["openweather_token"]}'
 )
 
-# --- Display setup ---
-matrix = Matrix()
-if UNITS in ('imperial', 'metric'):
-    gfx = display_graphics.Display_Graphics(
-        matrix.display, logger,
-        am_pm=False, units=UNITS
-    )
-
 class Context:
     localtime_refresh_ts = -TIME_SYNC_INTERVAL - 1
     weather_refresh_ts = -WEATHER_SYNC_INTERVAL - 1
     gfx = None
 
 context = Context()
-context.gfx = display_graphics.Display_Graphics(
+# --- Display setup ---
+matrix = Matrix()
+context.gfx = display_graphics.DisplayGraphics(
     matrix.display, logger,
-    am_pm=False, units=UNITS
+    am_pm=False, celsius=is_metric, meters_speed=is_metric,
 )
 logger.debug('== Context loaded')
 
@@ -122,30 +115,28 @@ def update_time():
     # RTC.datetime = time_struct
     return time_struct
 
-def maybe_render(context):
-    # only query the online time once per hour (and on first run)
-    if (time.monotonic() - context.localtime_refresh_ts) > TIME_SYNC_INTERVAL:
-        time_struct = update_time()
-        logger.debug(f'== GET/time @ {time_struct}')
-        context.localtime_refresh_ts = time.monotonic()
 
-    # only query the weather every 10 minutes (and on first run)
-    if (time.monotonic() - context.weather_refresh_ts) > WEATHER_SYNC_INTERVAL:
-        logger.debug(f'== GET/weather REQ: {DATA_SOURCE}')
-        value = network.fetch_data(DATA_SOURCE, json_path=([],))
-        gfx.display_weather(value)
-        context.weather_refresh_ts = time.monotonic()
-        logger.debug(f'== GET/weather @ {time.localtime()}')
-
-    is_new_state = gfx.display_clock(time_tuple=time.localtime())
-    if is_new_state:
-        gfx.render()
-
-context = Context()
+logger.info('!! Starting main loop !!')
 while True:
     try:
-        maybe_render(context)
+        # only query the online time once per hour (and on first run)
+        if (time.monotonic() - context.localtime_refresh_ts) > TIME_SYNC_INTERVAL:
+            logger.info(f'FETCH time')
+            time_struct = update_time()
+            context.localtime_refresh_ts = time.monotonic()
+
+        # only query the weather every 10 minutes (and on first run)
+        if (time.monotonic() - context.weather_refresh_ts) > WEATHER_SYNC_INTERVAL:
+            logger.info(f'FETCH weather')
+            value = network.fetch_data(DATA_SOURCE, json_path=([],))
+            context.gfx.display_weather(value)
+            context.weather_refresh_ts = time.monotonic()
+
+        is_new_state = context.gfx.display_clock(time_tuple=time.localtime())
+        if is_new_state:
+            context.gfx.render()
     except BaseException as e: # catchall
+        print('!! Render failure !!')
         logger.error(f'!! Render failure: {traceback.format_exception(type(e), e, e.__traceback__)}')
         time.sleep(30)  # Sleep for a bit in case it's intermittent
 
