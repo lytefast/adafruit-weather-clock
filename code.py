@@ -45,7 +45,7 @@ matrixportal = MatrixPortal(
     status_neopixel=board.NEOPIXEL, debug=True)
 
 logger = logging.getLogger('aio')
-# logger.addHandler(AIOHandler('adafruit-weather-clock', matrixportal.network, logging.INFO))
+logger.addHandler(AIOHandler('adafruit-weather-clock', matrixportal.network, logging.INFO))
 logger.setLevel(logging.INFO)
 
 gc.collect()
@@ -144,8 +144,6 @@ while True:
             is_render = True
 
         is_render |= bool(context.gfx.update_clock(time_tuple=time.localtime()))
-        if is_render:
-            context.gfx.render()
     except BaseException as e: # catchall
         print('!! Render failure !!')
         logger.error(f'!! Render failure: {traceback.format_exception(type(e), e, e.__traceback__)}')

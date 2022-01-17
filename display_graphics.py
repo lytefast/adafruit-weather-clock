@@ -33,6 +33,7 @@ HUMIDITY_COLOR = COLOR_BLUE_ROYAL
 WIND_COLOR = COLOR_LIME_LIGHT
 TIME_COLORS = [COLOR_LIME, COLOR_WHITE, COLOR_GREY]
 
+WEATHER_X_OFFSET = 24
 ICON_WIDTH = 16
 ICON_HEIGHT = 16
 
@@ -79,44 +80,7 @@ class DisplayGraphics(displayio.Group):
         self._init_clock_group(cwd)
         # used to short circuit time renders
         self._clock_state = (-1,-1)
-
-        # Load the icon sprite sheet
-        PATH_WEATHER_ICONS = f'{cwd}/weather-icons.bmp'
-        icons = displayio.OnDiskBitmap(PATH_WEATHER_ICONS)
-        self._icon_sprite = displayio.TileGrid(
-            icons,
-            pixel_shader=icons.pixel_shader,
-            tile_width=ICON_WIDTH,
-            tile_height=ICON_HEIGHT
-        )
         self.set_icon(None)
-
-    def set_icon(self, icon_name):
-        '''Use icon_name to get the position of the sprite and update
-        the current icon.
-
-        :param icon_name: The icon name returned by openweathermap
-
-        Format is always 2 numbers followed by 'd' or 'n' as the 3rd character
-        '''
-
-        icon_map = ('01', '02', '03', '04', '09', '10', '11', '13', '50')
-
-        self.logger.debug(f'== Set icon to {icon_name}')
-        if self._icon_group:
-            self._icon_group.pop()
-        if icon_name is not None:
-            row = None
-            for index, icon in enumerate(icon_map):
-                if icon == icon_name[0:2]:
-                    row = index
-                    break
-            column = 0
-            if icon_name[2] == 'n':
-                column = 1
-            if row is not None:
-                self._icon_sprite[0] = (row * 2) + column
-                self._icon_group.append(self._icon_sprite)
 
     def _init_clock_group(self, asset_path):
         self.clock_idx = self.matrixportal.add_text(
@@ -135,19 +99,21 @@ class DisplayGraphics(displayio.Group):
 
         self.temp_idx = self.matrixportal.add_text(
             text_font=small_font,
-            text_position=(24 + 16, 0),
+            text_position=(WEATHER_X_OFFSET + ICON_WIDTH, 0),
             text_anchor_point=(0, 0),
             line_spacing=0.6,
             text_color=TEMP_COLOR,
             scrolling=False,
             is_data=False,
         )
+        gc.collect()
         glyphs = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-,.: °'
         self.matrixportal.preload_font(glyphs, self.temp_idx)
+        gc.collect()
 
         self.wind_idx = self.matrixportal.add_text(
             text_font=small_font,
-            text_position=(24, 17),
+            text_position=(WEATHER_X_OFFSET, ICON_HEIGHT + 1),
             line_spacing=0.6,
             text_color=WIND_COLOR,
             scrolling=False,
@@ -156,15 +122,25 @@ class DisplayGraphics(displayio.Group):
 
         self.humidity_idx = self.matrixportal.add_text(
             text_font=small_font,
-            text_position=(24, 27),
+            text_position=(WEATHER_X_OFFSET, 27),
             line_spacing=0.6,
             text_color=HUMIDITY_COLOR,
             scrolling=False,
             is_data=False,
         )
+        gc.collect()
 
-        self._icon_group = displayio.Group()
-
+        # Load the icon sprite sheet
+        icons = displayio.OnDiskBitmap(f'{asset_path}/weather-icons.bmp')
+        self._icon_sprite = displayio.TileGrid(
+            icons,
+            pixel_shader=icons.pixel_shader,
+            tile_width=ICON_WIDTH,
+            tile_height=ICON_HEIGHT,
+            x=WEATHER_X_OFFSET, y=-2,
+        )
+        gc.collect()
+        self.matrixportal.splash.append(self._icon_sprite)
 
     def update_clock(self, time_tuple):
         hours = time_tuple[3] #+ time_tuple[-1]) % 24
@@ -192,9 +168,6 @@ class DisplayGraphics(displayio.Group):
         return (hours, minutes)
 
     def update_weather(self, weather):
-        # set the icon
-        # self.set_icon(weather['weather'][0]['icon'])
-
         city_name = weather['name'] + ', ' + weather['sys']['country']
         temperature = weather['main']['temp']
         temperature = f'{temperature: >2.0f}°C' if self.celsius else  f'{temperature}°F'
@@ -218,16 +191,40 @@ class DisplayGraphics(displayio.Group):
             wind = f'{wind} mph'
         self.matrixportal.set_text(wind, self.wind_idx)
 
+        self.set_icon(weather['weather'][0]['icon'])
+
         weather_data = [
+            city_name,
             temperature,
             description,
             humidity,
             wind,
         ]
         self.logger.debug('== Weather Overview: %s', weather_data)
+
         gc.collect()
         return True
 
-    def render(self):
-        # self.display.show(self.root_group)
-        pass
+    def set_icon(self, icon_name):
+        '''Use icon_name to get the position of the sprite and update
+        the current icon.
+
+        :param icon_name: The icon name returned by openweathermap
+
+        Format is always 2 numbers followed by 'd' or 'n' as the 3rd character
+        '''
+
+        icon_map = ('01', '02', '03', '04', '09', '10', '11', '13', '50')
+
+        self.logger.debug(f'== Set icon to {icon_name}')
+        if icon_name is not None:
+            row = None
+            for index, icon in enumerate(icon_map):
+                if icon == icon_name[0:2]:
+                    row = index
+                    break
+            column = 0
+            if icon_name[2] == 'n':
+                column = 1
+            if row is not None:
+                self._icon_sprite[0] = (row * 2) + column
