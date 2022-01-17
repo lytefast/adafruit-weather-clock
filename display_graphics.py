@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+import gc
 import time
 import displayio
 from adafruit_display_text.label import Label
@@ -84,9 +85,6 @@ class DisplayGraphics(displayio.Group):
         # used to short circuit time renders
         self._clock_state = (-1,-1)
 
-        self._text_group = displayio.Group()
-        self.append(self._text_group)
-
         # Load the icon sprite sheet
         PATH_WEATHER_ICONS = f'{cwd}/weather-icons.bmp'
         icons = displayio.OnDiskBitmap(PATH_WEATHER_ICONS)
@@ -152,8 +150,9 @@ class DisplayGraphics(displayio.Group):
 
         splash.append(bg_sprite)
         display.show(splash)
+        gc.collect()
 
-    def display_weather(self, weather):
+    def update_weather(self, weather):
         # set the icon
         self.set_icon(weather['weather'][0]['icon'])
 
@@ -165,8 +164,8 @@ class DisplayGraphics(displayio.Group):
         else:
             self.temp_label.text = f'{temperature: >2.0f}°F'
 
-        # description = weather['weather'][0]['description']
-        # description = description[0].upper() + description[1:]
+        description = weather['weather'][0]['description']
+        description = description[0].upper() + description[1:]
         # self.description_text.text = description # 'thunderstorm with heavy drizzle'
 
         humidity = weather['main']['humidity']
@@ -181,12 +180,13 @@ class DisplayGraphics(displayio.Group):
 
         weather_data = [
             self.temp_label.text,
-            # self.description_text.text,
+            description,
             self.humidity_label.text,
             self.wind_label.text,
         ]
         self.logger.debug('== Weather Overview: %s', weather_data)
-        self.display.show(self.root_group)
+        gc.collect()
+        return True
 
     def set_icon(self, icon_name):
         '''Use icon_name to get the position of the sprite and update
@@ -215,7 +215,7 @@ class DisplayGraphics(displayio.Group):
                 self._icon_sprite[0] = (row * 2) + column
                 self._icon_group.append(self._icon_sprite)
     
-    def display_clock(self, time_tuple):
+    def update_clock(self, time_tuple):
         hours = time_tuple[3] #+ time_tuple[-1]) % 24
         minutes = time_tuple[4]
 
@@ -239,7 +239,6 @@ class DisplayGraphics(displayio.Group):
         self.minutes_label.color = time_color
 
         self.logger.debug(f'== Display time: {self.hours_label.text}:{self.minutes_label.text}.')
-        self.display.show(self.root_group)
         return (hours, minutes)
 
     def render(self):
