@@ -39,9 +39,9 @@ except ImportError:
     print('== WiFi secrets are kept in secrets.py, please add them there!')
     raise
 
-network = Network(status_neopixel=board.NEOPIXEL, debug=True)
+# network = Network(status_neopixel=board.NEOPIXEL, debug=True)
 logger = logging.getLogger('aio')
-logger.addHandler(AIOHandler('adafruit-weather-clock', network, logging.INFO))
+# logger.addHandler(AIOHandler('adafruit-weather-clock', network, logging.INFO))
 logger.setLevel(logging.INFO)
 
 gc.collect()
@@ -109,9 +109,9 @@ context.gfx = display_graphics.DisplayGraphics(
 gc.collect()
 logger.debug('== Context loaded')
 
-def update_time():
+def update_time(context):
     try:
-        network.get_local_time()
+        context.gfx.matrixportal.network.get_local_time()
     except BaseException as e:
         logger.warning(f'!! Failed to update time: {traceback.format_exception(type(e), e, e.__traceback__)}')
         pass
@@ -129,16 +129,16 @@ while True:
         # only query the online time once per hour (and on first run)
         if (time.monotonic() - context.localtime_refresh_ts) > TIME_SYNC_INTERVAL:
             logger.info(f'FETCH time')
-            time_struct = update_time()
+            time_struct = update_time(context)
             context.localtime_refresh_ts = time.monotonic()
 
-        # only query the weather every 10 minutes (and on first run)
-        if (time.monotonic() - context.weather_refresh_ts) > WEATHER_SYNC_INTERVAL:
-            logger.info(f'FETCH weather')
-            value = network.fetch_data(DATA_SOURCE, json_path=([],))
-            context.gfx.update_weather(value)
-            context.weather_refresh_ts = time.monotonic()
-            is_render = True
+        # # only query the weather every 10 minutes (and on first run)
+        # if (time.monotonic() - context.weather_refresh_ts) > WEATHER_SYNC_INTERVAL:
+        #     logger.info(f'FETCH weather')
+        #     value = network.fetch_data(DATA_SOURCE, json_path=([],))
+        #     context.gfx.update_weather(value)
+        #     context.weather_refresh_ts = time.monotonic()
+        #     is_render = True
 
         is_render |= bool(context.gfx.update_clock(time_tuple=time.localtime()))
         if is_render:
