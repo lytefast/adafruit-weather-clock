@@ -125,7 +125,7 @@ class DisplayGraphics(displayio.Group):
             text_position=(WEATHER_X_OFFSET, 27),
             line_spacing=0.6,
             text_color=HUMIDITY_COLOR,
-            scrolling=False,
+            scrolling=True,
             is_data=False,
         )
         gc.collect()
@@ -176,10 +176,10 @@ class DisplayGraphics(displayio.Group):
         description = weather['weather'][0]['description']
         description = description[0].upper() + description[1:]
         # self.description_text.text = description # 'thunderstorm with heavy drizzle'
-        self.matrixportal.set_text(description, self.humidity_idx)
+        # self.matrixportal.set_text(description, self.humidity_idx)
 
         humidity = weather['main']['humidity']
-        humidity = f'{humidity}% humidity'
+        humidity = f'{humidity}% humidity, {description}'
         # self.humidity_label.text = f'{humidity}% humidity'
         self.matrixportal.set_text(humidity, self.humidity_idx)
 

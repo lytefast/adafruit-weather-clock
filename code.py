@@ -150,4 +150,5 @@ while True:
         time.sleep(30)  # Sleep for a bit in case it's intermittent
 
     # Pause between labels
+    context.gfx.matrixportal.scroll()
     time.sleep(SCROLL_HOLD_TIME)
