@@ -20,7 +20,7 @@ import traceback
 
 from digitalio import DigitalInOut, Direction, Pull
 from adafruit_matrixportal.network import Network
-from adafruit_matrixportal.matrix import Matrix
+from adafruit_matrixportal.matrixportal import MatrixPortal
 from aio_handler import AIOHandler
 
 
@@ -39,9 +39,13 @@ except ImportError:
     print('== WiFi secrets are kept in secrets.py, please add them there!')
     raise
 
-network = Network(status_neopixel=board.NEOPIXEL, debug=True)
+# --- Display setup ---
+matrixportal = MatrixPortal(
+    default_bg='./loading.bmp',
+    status_neopixel=board.NEOPIXEL, debug=True)
+
 logger = logging.getLogger('aio')
-logger.addHandler(AIOHandler('adafruit-weather-clock', network, logging.INFO))
+logger.addHandler(AIOHandler('adafruit-weather-clock', matrixportal.network, logging.INFO))
 logger.setLevel(logging.INFO)
 
 gc.collect()
@@ -100,18 +104,16 @@ class Context:
     gfx = None
 
 context = Context()
-# --- Display setup ---
-matrix = Matrix()
 context.gfx = display_graphics.DisplayGraphics(
-    matrix.display, logger,
+    matrixportal, logger,
     am_pm=False, celsius=is_metric, meters_speed=is_metric,
 )
 gc.collect()
 logger.debug('== Context loaded')
 
-def update_time():
+def update_time(context):
     try:
-        network.get_local_time()
+        matrixportal.network.get_local_time()
     except BaseException as e:
         logger.warning(f'!! Failed to update time: {traceback.format_exception(type(e), e, e.__traceback__)}')
         pass
@@ -123,30 +125,30 @@ def update_time():
 
 
 logger.info('!! Starting main loop !!')
+matrixportal.set_background(0)
 while True:
     try:
         is_render = False
         # only query the online time once per hour (and on first run)
         if (time.monotonic() - context.localtime_refresh_ts) > TIME_SYNC_INTERVAL:
             logger.info(f'FETCH time')
-            time_struct = update_time()
+            time_struct = update_time(context)
             context.localtime_refresh_ts = time.monotonic()
 
         # only query the weather every 10 minutes (and on first run)
         if (time.monotonic() - context.weather_refresh_ts) > WEATHER_SYNC_INTERVAL:
             logger.info(f'FETCH weather')
-            value = network.fetch_data(DATA_SOURCE, json_path=([],))
-            context.gfx.update_weather(value)
+            value = matrixportal.network.fetch_data(DATA_SOURCE, json_path=([],))
+            context.gfx.update_weather(value[0])
             context.weather_refresh_ts = time.monotonic()
             is_render = True
 
         is_render |= bool(context.gfx.update_clock(time_tuple=time.localtime()))
-        if is_render:
-            context.gfx.render()
     except BaseException as e: # catchall
         print('!! Render failure !!')
         logger.error(f'!! Render failure: {traceback.format_exception(type(e), e, e.__traceback__)}')
         time.sleep(30)  # Sleep for a bit in case it's intermittent
 
     # Pause between labels
+    context.gfx.matrixportal.scroll()
     time.sleep(SCROLL_HOLD_TIME)
