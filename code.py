@@ -131,12 +131,14 @@ while True:
         is_render = False
         # only query the online time once per hour (and on first run)
         if (time.monotonic() - context.localtime_refresh_ts) > TIME_SYNC_INTERVAL:
+            gc.collect()
             logger.info(f'FETCH time')
             time_struct = update_time(context)
             context.localtime_refresh_ts = time.monotonic()
 
         # only query the weather every 10 minutes (and on first run)
         if (time.monotonic() - context.weather_refresh_ts) > WEATHER_SYNC_INTERVAL:
+            gc.collect()
             logger.info(f'FETCH weather')
             value = matrixportal.network.fetch_data(DATA_SOURCE, json_path=([],))
             context.gfx.update_weather(value[0])
@@ -146,8 +148,9 @@ while True:
         is_render |= bool(context.gfx.update_clock(time_tuple=time.localtime()))
     except BaseException as e: # catchall
         gc.collect()
-        print('!! Render failure !!')
-        logger.error(f'!! Render failure: {traceback.format_exception(type(e), e, e.__traceback__)}')
+        print('FAIL Render')
+        logger.error(f'FAIL Render: {traceback.format_exception(type(e), e, e.__traceback__)}')
+        gc.collect()
         time.sleep(10)  # Sleep for a bit in case it's intermittent
 
     # Pause between labels

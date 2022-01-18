@@ -168,21 +168,19 @@ class DisplayGraphics(displayio.Group):
         return (hours, minutes)
 
     def update_weather(self, weather):
+        gc.collect()
         city_name = weather['name'] + ', ' + weather['sys']['country']
         temperature = weather['main']['temp']
-        description = weather['weather'][0]['description']
         humidity = weather['main']['humidity']
         wind = round(weather['wind']['speed'])
+        description = weather['weather'][0]['description']
         self.set_icon(weather['weather'][0]['icon'])
+        weather = None # clear for GC
 
         temperature = f'{temperature: >2.0f}°C' if self.celsius else  f'{temperature}°F'
-        description = description[0].upper() + description[1:]
-        humidity = f'{humidity}% humidity'
-
         gc.collect()
 
         self.matrixportal.set_text(temperature, self.temp_idx)
-        self.matrixportal.set_text(f'{description}, {humidity}', self.description_idx)
 
         if self.meters_speed:
             wind *= 3.6
@@ -191,6 +189,12 @@ class DisplayGraphics(displayio.Group):
             wind = f'{wind} mph'
         self.matrixportal.set_text(wind, self.wind_idx)
 
+        gc.collect()
+        description = description[0].upper() + description[1:]
+        humidity = f'{humidity}% humidity'
+        self.matrixportal.set_text(f'{description}, {humidity}', self.description_idx)
+
+        gc.collect()
         weather_data = [
             city_name,
             temperature,

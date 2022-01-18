@@ -50,6 +50,10 @@ class AIOHandler(LoggingHandler):
         """
         if log_level < self.send_log_level:
             return
-        self._portal_device.push_to_io(
-            self._log_feed_name, self.format(log_level, message)
-        )
+        try:
+            self._portal_device.push_to_io(
+                self._log_feed_name, self.format(log_level, message)
+            )
+        except:
+            # something went wrong but don't kill the caller
+            pass
