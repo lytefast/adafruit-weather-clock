@@ -120,7 +120,7 @@ class DisplayGraphics(displayio.Group):
             is_data=False,
         )
 
-        self.humidity_idx = self.matrixportal.add_text(
+        self.description_idx = self.matrixportal.add_text(
             text_font=small_font,
             text_position=(WEATHER_X_OFFSET, 27),
             line_spacing=0.6,
@@ -170,28 +170,26 @@ class DisplayGraphics(displayio.Group):
     def update_weather(self, weather):
         city_name = weather['name'] + ', ' + weather['sys']['country']
         temperature = weather['main']['temp']
-        temperature = f'{temperature: >2.0f}°C' if self.celsius else  f'{temperature}°F'
-        self.matrixportal.set_text(temperature, self.temp_idx)
-
         description = weather['weather'][0]['description']
-        description = description[0].upper() + description[1:]
-        # self.description_text.text = description # 'thunderstorm with heavy drizzle'
-        # self.matrixportal.set_text(description, self.humidity_idx)
-
         humidity = weather['main']['humidity']
-        humidity = f'{humidity}% humidity, {description}'
-        # self.humidity_label.text = f'{humidity}% humidity'
-        self.matrixportal.set_text(humidity, self.humidity_idx)
-
         wind = round(weather['wind']['speed'])
+        self.set_icon(weather['weather'][0]['icon'])
+
+        temperature = f'{temperature: >2.0f}°C' if self.celsius else  f'{temperature}°F'
+        description = description[0].upper() + description[1:]
+        humidity = f'{humidity}% humidity'
+
+        gc.collect()
+
+        self.matrixportal.set_text(temperature, self.temp_idx)
+        self.matrixportal.set_text(f'{description}, {humidity}', self.description_idx)
+
         if self.meters_speed:
             wind *= 3.6
             wind = f'{wind: <3.1f} km/h'
         else:
             wind = f'{wind} mph'
         self.matrixportal.set_text(wind, self.wind_idx)
-
-        self.set_icon(weather['weather'][0]['icon'])
 
         weather_data = [
             city_name,

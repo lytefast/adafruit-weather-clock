@@ -28,7 +28,7 @@ ONE_MIN = 60
 ONE_HOUR = 60 * ONE_MIN
 
 TIME_SYNC_INTERVAL = ONE_HOUR
-WEATHER_SYNC_INTERVAL = 15 * ONE_MIN
+WEATHER_SYNC_INTERVAL = 20 * ONE_MIN
 
 SCROLL_HOLD_TIME = 0.2  # set this to hold each line before finishing scroll
 
@@ -145,9 +145,10 @@ while True:
 
         is_render |= bool(context.gfx.update_clock(time_tuple=time.localtime()))
     except BaseException as e: # catchall
+        gc.collect()
         print('!! Render failure !!')
         logger.error(f'!! Render failure: {traceback.format_exception(type(e), e, e.__traceback__)}')
-        time.sleep(30)  # Sleep for a bit in case it's intermittent
+        time.sleep(10)  # Sleep for a bit in case it's intermittent
 
     # Pause between labels
     context.gfx.matrixportal.scroll()
