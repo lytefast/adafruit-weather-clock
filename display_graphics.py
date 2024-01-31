@@ -41,7 +41,7 @@ def _init_fonts(asset_path):
     PATH_FONT_REG_8 = f'{asset_path}/fonts/Roboto-8-Regular.bdf'
     PATH_FONT_MONO_16 = f'{asset_path}/fonts/RobotoMono-16-Semibold.bdf'
 
-    glyphs = b'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-,.: '
+    glyphs = b'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ -,.:°%/'
     small_font = bitmap_font.load_font(PATH_FONT_REG_8)
     small_font.load_glyphs(glyphs)
     small_font.load_glyphs(('°',))  # a non-ascii character
@@ -95,7 +95,8 @@ class DisplayGraphics(displayio.Group):
         self.matrixportal.preload_font('1234567890', self.clock_idx)
 
     def _init_weather_stats(self, asset_path):
-        small_font = f'{asset_path}/fonts/Roboto-8-Regular.bdf'
+        #small_font = f'{asset_path}/fonts/Roboto-8-Regular.bdf'
+        small_font = f'{asset_path}/fonts/spleen-5x8.bdf'
 
         self.temp_idx = self.matrixportal.add_text(
             text_font=small_font,
@@ -107,7 +108,7 @@ class DisplayGraphics(displayio.Group):
             is_data=False,
         )
         gc.collect()
-        glyphs = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-,.: °'
+        glyphs = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ -,.:°%/'
         self.matrixportal.preload_font(glyphs, self.temp_idx)
         gc.collect()
 
@@ -119,6 +120,7 @@ class DisplayGraphics(displayio.Group):
             scrolling=False,
             is_data=False,
         )
+        self.matrixportal.set_text('wind', self.wind_idx)
 
         self.description_idx = self.matrixportal.add_text(
             text_font=small_font,
@@ -128,6 +130,7 @@ class DisplayGraphics(displayio.Group):
             scrolling=True,
             is_data=False,
         )
+        self.matrixportal.set_text(f'description humidity', self.description_idx)
         gc.collect()
 
         # Load the icon sprite sheet
@@ -158,7 +161,7 @@ class DisplayGraphics(displayio.Group):
             time_color = TIME_COLORS[1]
         else:
             time_color = TIME_COLORS[2]
-        
+
         time_str = f'{hours:0>2} {minutes:0>2}'
         self.matrixportal.set_text_color(time_color, self.clock_idx)
         self.matrixportal.set_text(time_str, self.clock_idx)
@@ -191,8 +194,7 @@ class DisplayGraphics(displayio.Group):
 
         gc.collect()
         description = description[0].upper() + description[1:]
-        humidity = f'{humidity}% humidity'
-        self.matrixportal.set_text(f'{description}, {humidity}', self.description_idx)
+        self.matrixportal.set_text(f'{description}, {humidity}% humidity', self.description_idx)
 
         gc.collect()
         weather_data = [
