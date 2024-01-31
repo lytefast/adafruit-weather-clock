@@ -91,10 +91,10 @@ logger.debug(f'== Jumper set to {UNITS}')
 #     f'&appid={secrets["openweather_token"]}'
 # )
 DATA_SOURCE = (
-    f'https://api.openweathermap.org/data/2.5/weather'
-    f'?lat={secrets["latitude"]}'
-    f'&lon={secrets["longitude"]}'
-    f'&units={UNITS}'
+    f'https://api.openweathermap.org/data/2.5/weather' +
+    f'?lat={secrets["latitude"]}' +
+    f'&lon={secrets["longitude"]}' +
+    f'&units={UNITS}' +
     f'&appid={secrets["openweather_token"]}'
 )
 
